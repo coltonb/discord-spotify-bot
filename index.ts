@@ -18,10 +18,25 @@ const spotify = new Spotify(
 
 client.on(Events.MessageCreate, async (message) => {
   const tracks = Spotify.getSpotifyTrackUris(message.content);
+  const playlistId = process.env.SPOTIFY_PLAYLIST_ID!;
+  const logPrefix = `[${message.id}]`;
 
   if (tracks.length === 0) return;
 
-  spotify.appendToPlaylist(process.env.SPOTIFY_PLAYLIST_ID!, tracks);
+  console.log(logPrefix, `Appending tracks ${tracks} to playlist:`, playlistId);
+
+  try {
+    await spotify.appendToPlaylist(playlistId, tracks);
+  } catch (error) {
+    console.error(logPrefix, "Failed to append tracks to playlist:", error);
+    return;
+  }
+
+  console.log(
+    logPrefix,
+    "Successfully appended tracks to playlist:",
+    playlistId
+  );
 });
 
 client.login(process.env.DISCORD_TOKEN!);
