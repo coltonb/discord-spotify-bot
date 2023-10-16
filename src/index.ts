@@ -1,6 +1,6 @@
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { Spotify } from "./spotify";
-import "dotenv/config";
+import config from "./config";
 
 const client = new Client({
   intents: [
@@ -10,15 +10,14 @@ const client = new Client({
   ],
 });
 
-const spotify = new Spotify(
-  process.env.SPOTIFY_CLIENT_ID!,
-  process.env.SPOTIFY_CLIENT_SECRET!,
-  process.env.SPOTIFY_REFRESH_TOKEN!
-);
+const spotify = new Spotify(config.spotify.client);
+const { playlistId } = config.spotify;
 
 client.on(Events.MessageCreate, async (message) => {
-  const tracks = Spotify.getSpotifyTrackUris(message.content);
-  const playlistId = process.env.SPOTIFY_PLAYLIST_ID!;
+  const tracks = (await Spotify.getSpotifyTrackUris(message.content)).slice(
+    0,
+    99
+  );
   const logPrefix = `[${message.id}]`;
 
   if (tracks.length === 0) return;
@@ -26,6 +25,7 @@ client.on(Events.MessageCreate, async (message) => {
   console.log(logPrefix, `Appending tracks ${tracks} to playlist:`, playlistId);
 
   try {
+    await spotify.deleteFromPlaylist(playlistId, tracks);
     await spotify.appendToPlaylist(playlistId, tracks);
   } catch (error) {
     console.error(logPrefix, "Failed to append tracks to playlist:", error);
@@ -39,4 +39,4 @@ client.on(Events.MessageCreate, async (message) => {
   );
 });
 
-client.login(process.env.DISCORD_TOKEN!);
+client.login(config.discord.token);
